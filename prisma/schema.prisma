@@ -1,0 +1,71 @@
+﻿generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  password    String
+  name        String?
+  avatar      String?
+  role        Role      @default(USER)
+  events      Event[]
+  registrations Registration[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Event {
+  id          String     @id @default(uuid())
+  title       String
+  description String
+  date        DateTime
+  location    String
+  imageUrl    String?
+  category    Category
+  tags        String[]
+  capacity    Int
+  price       Float      @default(0.00)
+  organizer   User       @relation(fields: [organizerId], references: [id])
+  organizerId String
+  registrations Registration[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Registration {
+  id        String   @id @default(uuid())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  status    RegistrationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ORGANIZER
+  ADMIN
+}
+
+enum Category {
+  WORKSHOP
+  CONFERENCE
+  SOCIAL
+  SPORTS
+  VOLUNTEERING
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  ATTENDED
+}
