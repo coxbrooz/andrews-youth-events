@@ -1,80 +1,73 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+// 1. Define the shape of your data clearly instead of using 'any'
 interface EventData {
   title: string;
+  description: string;
   ministry: string;
+  venue: string;
   date: string;
   time: string;
-  venue: string;
-  description: string;
 }
 
-interface Props {
+interface AddEventProps {
   isOpen: boolean;
   onClose: () => void;
   onAddEvent: (data: EventData) => void;
-  ministries: string[];
-  onAddMinistry: (m: string) => void;
   initialData?: EventData | null;
 }
 
-const AddEventDialog = ({ isOpen, onClose, onAddEvent, ministries, onAddMinistry, initialData }: Props) => {
-  const [formData, setFormData] = useState<EventData>({ 
-    title: "", ministry: "", date: "", time: "", venue: "", description: "" 
+const AddEventDialog = ({ isOpen, onClose, onAddEvent, initialData }: AddEventProps) => {
+  const [formData, setFormData] = useState<EventData>({
+    title: "",
+    description: "",
+    ministry: "",
+    venue: "",
+    date: "",
+    time: "",
   });
 
-  // When initialData changes (like when clicking Edit), fill the form
   useEffect(() => {
     if (initialData) setFormData(initialData);
-    else setFormData({ title: "", ministry: "", date: "", time: "", venue: "", description: "" });
   }, [initialData]);
-
-  const [isAddingMinistry, setIsAddingMinistry] = useState(false);
-  const [newMinistry, setNewMinistry] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onAddEvent(formData);
-    onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white">
-        <DialogHeader><DialogTitle>{initialData ? "Edit Event" : "Create New Event"}</DialogTitle></DialogHeader>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{initialData ? "Edit Event" : "Create New Event"}</DialogTitle>
+        </DialogHeader>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input placeholder="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required />
-          
-          <div className="flex gap-2">
-            <Select value={formData.ministry} onValueChange={(v) => setFormData({...formData, ministry: v})}>
-              <SelectTrigger><SelectValue placeholder="Ministry" /></SelectTrigger>
-              <SelectContent>
-                {ministries.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button type="button" variant="outline" onClick={() => setIsAddingMinistry(true)}><Plus className="w-4 h-4"/></Button>
+          <div>
+            <label htmlFor="title" className="text-sm font-medium">Title</label>
+            <input id="title" className="w-full p-2 border rounded" placeholder="Event Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required />
           </div>
 
-          {isAddingMinistry && (
-            <div className="flex gap-2">
-              <Input placeholder="New Ministry" value={newMinistry} onChange={(e) => setNewMinistry(e.target.value)} />
-              <Button type="button" onClick={() => { onAddMinistry(newMinistry); setIsAddingMinistry(false); }}>Save</Button>
-            </div>
-          )}
+          <div>
+            <label htmlFor="ministry" className="text-sm font-medium">Ministry Name</label>
+            <input id="ministry" className="w-full p-2 border rounded" value={formData.ministry} onChange={(e) => setFormData({...formData, ministry: e.target.value})} placeholder="e.g., Youth" required />
+          </div>
 
-          <Input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
-          <Input type="time" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} />
-          <Input placeholder="Venue" value={formData.venue} onChange={(e) => setFormData({...formData, venue: e.target.value})} />
-          <Textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
-          
-          <Button type="submit" className="w-full">{initialData ? "Save Changes" : "Create Event"}</Button>
+          <div className="flex gap-2">
+            <div className="w-full">
+              <label htmlFor="date" className="text-sm font-medium">Date</label>
+              <input id="date" type="date" className="w-full p-2 border rounded" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required />
+            </div>
+            <div className="w-full">
+              <label htmlFor="time" className="text-sm font-medium">Time</label>
+              <input id="time" type="time" className="w-full p-2 border rounded" value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} required />
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full">Save Event</Button>
         </form>
       </DialogContent>
     </Dialog>

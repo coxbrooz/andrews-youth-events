@@ -4,7 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 import EventCard from "../components/EventCard";
 import AddEventDialog from "../components/AddEventDialog";
 
-// 1. Rename to EventItem to avoid conflict with browser 'Event'
 interface EventItem {
   id: number;
   title: string;
@@ -14,10 +13,10 @@ interface EventItem {
   date: string;
   time: string;
   attendees: number;
+  registrations_count: number;
   status: "upcoming" | "completed";
 }
 
-// 2. Clearly define EventData
 interface EventData {
   title: string;
   description: string;
@@ -29,11 +28,9 @@ interface EventData {
 
 const Index = () => {
   const { toast } = useToast();
-  // Use EventItem here
   const [events, setEvents] = useState<EventItem[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<(EventItem & EventData) | null>(null);
-  const [ministries, setMinistries] = useState<string[]>(["Youth", "Bible Study"]);
 
   const API_URL = 'http://127.0.0.1:8000/api/events';
   const headers = useMemo(() => ({
@@ -54,29 +51,30 @@ const Index = () => {
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
   const handleSaveEvent = async (data: EventData) => {
-    if (editingEvent) {
-      await fetch(`${API_URL}/${editingEvent.id}`, { 
-        method: 'PUT', 
+    try {
+      const response = await fetch(editingEvent ? `${API_URL}/${editingEvent.id}` : API_URL, { 
+        method: editingEvent ? 'PUT' : 'POST', 
         headers, 
         body: JSON.stringify(data) 
       });
-      toast({ title: "Updated!", description: "Event saved." });
-    } else {
-      await fetch(API_URL, { 
-        method: 'POST', 
-        headers, 
-        body: JSON.stringify(data) 
-      });
-      toast({ title: "Success!", description: "Event created." });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save event");
+      }
+
+      toast({ title: editingEvent ? "Updated!" : "Success!", description: "Event saved successfully." });
+      await fetchEvents(); 
+      setIsAddDialogOpen(false);
+      setEditingEvent(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Could not save the event.", variant: "destructive" });
     }
-    fetchEvents();
-    setIsAddDialogOpen(false);
-    setEditingEvent(null);
   };
 
   const handleDeleteEvent = async (id: number) => {
     await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers });
-    fetchEvents();
+    await fetchEvents();
     toast({ title: "Deleted!", description: "Event removed." });
   };
 
@@ -84,7 +82,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Youth Events</h1>
+          <h1 className="text-5xl font-bold text-red-800">Youth Events</h1>
           <Button onClick={() => { setEditingEvent(null); setIsAddDialogOpen(true); }}>+ Add Event</Button>
         </div>
         
@@ -104,8 +102,6 @@ const Index = () => {
         isOpen={isAddDialogOpen || !!editingEvent} 
         onClose={() => { setIsAddDialogOpen(false); setEditingEvent(null); }} 
         onAddEvent={handleSaveEvent}
-        ministries={ministries}
-        onAddMinistry={(m) => setMinistries([...ministries, m])}
         initialData={editingEvent}
       />
     </div>

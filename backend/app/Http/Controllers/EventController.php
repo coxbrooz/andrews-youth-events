@@ -7,31 +7,61 @@ use Illuminate\Http\Request;
 
 class EventController extends Controller
 {
-    // Fetch all events
     public function index()
     {
-        return Event::all();
+        return Event::withCount('registrations')->get();
     }
 
-    // Create a new event
     public function store(Request $request)
     {
-        return Event::create($request->all());
+        // 1. Merge default values so validation doesn't fail for missing form fields
+        $request->merge([
+            'status' => $request->input('status', 'upcoming'),
+            'attendees' => $request->input('attendees', 0),
+        ]);
+
+        // 2. Validate the request
+        $validated = $request->validate([
+            'title'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'ministry'    => 'required|string',
+            'venue'       => 'required|string',
+            'date'        => 'required|date',
+            'time'        => 'required',
+            'status'      => 'required|in:upcoming,completed',
+            'attendees'   => 'integer|min:0'
+        ]);
+
+        // 3. Create the event
+        $event = Event::create($validated);
+        
+        return response()->json($event, 201);
     }
 
-    // Update an existing event
     public function update(Request $request, $id)
     {
         $event = Event::findOrFail($id);
-        $event->update($request->all());
-        return response()->json(['message' => 'Event updated!']);
+
+        $validated = $request->validate([
+            'title'       => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'ministry'    => 'sometimes|required|string',
+            'venue'       => 'sometimes|required|string',
+            'date'        => 'sometimes|required|date',
+            'time'        => 'sometimes|required',
+            'status'      => 'sometimes|required|in:upcoming,completed',
+            'attendees'   => 'sometimes|integer|min:0'
+        ]);
+
+        $event->update($validated);
+        return response()->json(['message' => 'Event updated!', 'event' => $event]);
     }
 
-    // Delete an event
     public function destroy($id)
     {
         $event = Event::findOrFail($id);
         $event->delete();
+        
         return response()->json(['message' => 'Event deleted!']);
     }
 }
